@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Heart, Sunrise } from "lucide-react"
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Heart, Sunrise } from 'lucide-react'
 
 interface WelcomeScreenProps {
   onStart: () => void
@@ -25,11 +25,14 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
 
         <div className="mb-8 space-y-4">
           <p className="text-gray-700 leading-relaxed">
-            Cada día es una nueva oportunidad para florecer. Aquí encontrarás herramientas para acompañarte en tu camino
-            hacia el bienestar emocional.
+            Cada día es una nueva oportunidad para florecer. Aquí encontrarás
+            herramientas para acompañarte en tu camino hacia el bienestar
+            emocional.
           </p>
           <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-            <p className="text-emerald-800 text-sm font-medium">💚 Sin registros • Sin dependencia • A tu ritmo</p>
+            <p className="text-emerald-800 text-sm font-medium">
+              💚 Sin registros • Sin dependencia • A tu ritmo
+            </p>
           </div>
         </div>
 
@@ -41,7 +44,8 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
         </Button>
 
         <p className="text-xs text-gray-500 mt-6">
-          Recuerda: Esta herramienta complementa, no reemplaza, la ayuda profesional
+          Recuerda: Esta herramienta complementa, no reemplaza, la ayuda
+          profesional
         </p>
       </Card>
     </div>

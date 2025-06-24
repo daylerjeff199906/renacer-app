@@ -1,35 +1,64 @@
 'use client'
 
 import type React from 'react'
-
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Send, Clock, Heart } from 'lucide-react'
+import { Send, Clock, Heart, Trash2 } from 'lucide-react'
 import { useGemini } from '@/lib/gemini'
 
 interface Message {
   id: string
   text: string
   isUser: boolean
-  timestamp: Date
+  timestamp: string
 }
 
 export default function ChatScreen() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Hola, me alegra que estés aquí. Este es tu espacio seguro para expresarte. ¿Cómo te sientes hoy?',
-      isUser: false,
-      timestamp: new Date()
+  // Cargar mensajes desde localStorage al inicializar
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedMessages = localStorage.getItem('chatMessages')
+      return savedMessages
+        ? JSON.parse(savedMessages)
+        : [
+            {
+              id: '1',
+              text: 'Hola, me alegra que estés aquí. Este es tu espacio seguro para expresarte. ¿Cómo te sientes hoy?',
+              isUser: false,
+              timestamp: new Date().toISOString()
+            }
+          ]
     }
-  ])
+    return [
+      {
+        id: '1',
+        text: 'Hola, me alegra que estés aquí. Este es tu espacio seguro para expresarte. ¿Cómo te sientes hoy?',
+        isUser: false,
+        timestamp: new Date().toISOString()
+      }
+    ]
+  })
+
   const { generateText, loading, result } = useGemini()
   const [inputText, setInputText] = useState('')
-  const [messageCount, setMessageCount] = useState(1)
+  const [messageCount, setMessageCount] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedMessages = localStorage.getItem('chatMessages')
+      return savedMessages ? JSON.parse(savedMessages).length : 1
+    }
+    return 1
+  })
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const maxMessages = 15
+
+  // Guardar mensajes en localStorage cuando cambian
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('chatMessages', JSON.stringify(messages))
+    }
+  }, [messages])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -46,12 +75,12 @@ export default function ChatScreen() {
       id: Date.now().toString(),
       text: inputText,
       isUser: true,
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     }
 
     setMessages((prev) => [...prev, userMessage])
     setInputText('')
-    setMessageCount((prev) => prev + 1)
+    setMessageCount((prev: number) => prev + 1)
 
     try {
       await generateText(inputText)
@@ -61,11 +90,11 @@ export default function ChatScreen() {
         id: (Date.now() + 2).toString(),
         text: 'No pude conectarme con el servidor. Intenta más tarde.',
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date().toISOString()
       }
 
       setMessages((prev) => [...prev, errorMessage])
-      setMessageCount((prev) => prev + 1)
+      setMessageCount((prev: number) => prev + 1)
     }
   }
 
@@ -77,12 +106,28 @@ export default function ChatScreen() {
       id: (Date.now() + 1).toString(),
       text: result,
       isUser: false,
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     }
 
     setMessages((prev) => [...prev, botMessage])
-    setMessageCount((prev) => prev + 1)
+    setMessageCount((prev: number) => prev + 1)
   }, [loading, result])
+
+  // Función para limpiar el historial
+  const clearHistory = () => {
+    setMessages([
+      {
+        id: '1',
+        text: 'Hola, me alegra que estés aquí. Este es tu espacio seguro para expresarte. ¿Cómo te sientes hoy?',
+        isUser: false,
+        timestamp: new Date().toISOString()
+      }
+    ])
+    setMessageCount(1)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('chatMessages')
+    }
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -96,13 +141,24 @@ export default function ChatScreen() {
       {/* Session Limit Indicator */}
       <div className="p-4">
         <Card className="p-3 bg-purple-50 border-purple-100">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2 text-purple-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-purple-700 text-sm">
               <Clock className="w-4 h-4" />
               <span>Sesión actual</span>
             </div>
-            <div className="text-purple-600 font-medium">
-              {messageCount}/{maxMessages} mensajes
+            <div className="flex items-center gap-2">
+              <div className="text-purple-600 font-medium text-sm">
+                {messageCount}/{maxMessages} mensajes
+              </div>
+              <Button
+                onClick={clearHistory}
+                variant="ghost"
+                size="sm"
+                className="text-purple-600 hover:text-purple-800 p-2"
+                title="Limpiar historial"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
           </div>
           <div className="mt-2 bg-purple-200 rounded-full h-2">
@@ -144,7 +200,7 @@ export default function ChatScreen() {
                   message.isUser ? 'text-emerald-100' : 'text-gray-500'
                 }`}
               >
-                {message.timestamp.toLocaleTimeString([], {
+                {new Date(message.timestamp).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit'
                 })}
