@@ -1,12 +1,13 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
-import { Send, Clock, Heart } from "lucide-react"
+import { useState, useRef, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card } from '@/components/ui/card'
+import { Send, Clock, Heart } from 'lucide-react'
+import { getChatGPTResponse } from '@/lib/chatgpt'
 
 interface Message {
   id: string
@@ -18,65 +19,67 @@ interface Message {
 export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "1",
-      text: "Hola, me alegra que estés aquí. Este es tu espacio seguro para expresarte. ¿Cómo te sientes hoy?",
+      id: '1',
+      text: 'Hola, me alegra que estés aquí. Este es tu espacio seguro para expresarte. ¿Cómo te sientes hoy?',
       isUser: false,
-      timestamp: new Date(),
-    },
+      timestamp: new Date()
+    }
   ])
-  const [inputText, setInputText] = useState("")
+  const [inputText, setInputText] = useState('')
   const [messageCount, setMessageCount] = useState(1)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const maxMessages = 15
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
-  const supportiveResponses = [
-    "Entiendo lo que compartes conmigo. Tus sentimientos son válidos.",
-    "Gracias por confiar en mí. ¿Hay algo específico que te gustaría explorar?",
-    "Me parece que estás siendo muy valiente al expresar esto.",
-    "Cada paso que das hacia el autoconocimiento es importante.",
-    "¿Cómo te sientes después de compartir esto conmigo?",
-    "Recuerda que está bien sentir lo que sientes. No hay emociones incorrectas.",
-    "Tu bienestar es importante. ¿Qué necesitas en este momento?",
-    "Has mostrado mucha fortaleza al llegar hasta aquí.",
-  ]
-
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputText.trim() || messageCount >= maxMessages) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputText,
       isUser: true,
-      timestamp: new Date(),
+      timestamp: new Date()
     }
 
     setMessages((prev) => [...prev, userMessage])
-    setInputText("")
+    setInputText('')
     setMessageCount((prev) => prev + 1)
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse: Message = {
+    try {
+      const replyText = await getChatGPTResponse(inputText)
+
+      const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: supportiveResponses[Math.floor(Math.random() * supportiveResponses.length)],
+        text: replyText,
         isUser: false,
-        timestamp: new Date(),
+        timestamp: new Date()
       }
-      setMessages((prev) => [...prev, botResponse])
+
+      setMessages((prev) => [...prev, botMessage])
       setMessageCount((prev) => prev + 1)
-    }, 1000)
+    } catch (error) {
+      console.error(error)
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        text: 'No pude conectarme con el servidor. Intenta más tarde.',
+        isUser: false,
+        timestamp: new Date()
+      }
+
+      setMessages((prev) => [...prev, errorMessage])
+      setMessageCount((prev) => prev + 1)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
     }
@@ -108,23 +111,37 @@ export default function ChatScreen() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 space-y-4">
         {messages.map((message) => (
-          <div key={message.id} className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}>
+          <div
+            key={message.id}
+            className={`flex ${
+              message.isUser ? 'justify-end' : 'justify-start'
+            }`}
+          >
             <div
               className={`max-w-[80%] p-3 rounded-2xl ${
                 message.isUser
-                  ? "bg-emerald-500 text-white rounded-br-md"
-                  : "bg-white border border-green-100 text-gray-800 rounded-bl-md shadow-sm"
+                  ? 'bg-emerald-500 text-white rounded-br-md'
+                  : 'bg-white border border-green-100 text-gray-800 rounded-bl-md shadow-sm'
               }`}
             >
               {!message.isUser && (
                 <div className="flex items-center gap-2 mb-1">
                   <Heart className="w-4 h-4 text-emerald-600" />
-                  <span className="text-xs text-emerald-600 font-medium">Apoyo</span>
+                  <span className="text-xs text-emerald-600 font-medium">
+                    Apoyo
+                  </span>
                 </div>
               )}
               <p className="text-sm leading-relaxed">{message.text}</p>
-              <p className={`text-xs mt-1 ${message.isUser ? "text-emerald-100" : "text-gray-500"}`}>
-                {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              <p
+                className={`text-xs mt-1 ${
+                  message.isUser ? 'text-emerald-100' : 'text-gray-500'
+                }`}
+              >
+                {message.timestamp.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
               </p>
             </div>
           </div>
@@ -136,8 +153,12 @@ export default function ChatScreen() {
       <div className="p-4">
         {messageCount >= maxMessages ? (
           <Card className="p-4 bg-amber-50 border-amber-200 text-center">
-            <p className="text-amber-800 text-sm mb-2">Has alcanzado el límite de mensajes para esta sesión</p>
-            <p className="text-amber-700 text-xs">Tómate un descanso y regresa cuando te sientas listo 💚</p>
+            <p className="text-amber-800 text-sm mb-2">
+              Has alcanzado el límite de mensajes para esta sesión
+            </p>
+            <p className="text-amber-700 text-xs">
+              Tómate un descanso y regresa cuando te sientas listo 💚
+            </p>
           </Card>
         ) : (
           <div className="flex gap-2">
