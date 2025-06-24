@@ -7,8 +7,7 @@ import {
   MessageCircle,
   BookOpen,
   Sparkles,
-  TrendingUp,
-  Phone
+  TrendingUp
 } from 'lucide-react'
 import WelcomeScreen from '@/components/welcome-screen'
 import ChatScreen from '@/components/chat-screen'
@@ -45,8 +44,7 @@ export default function RenacerApp() {
       icon: TrendingUp,
       label: 'Progreso',
       color: 'text-indigo-600'
-    },
-    { id: 'help', icon: Phone, label: 'Ayuda', color: 'text-rose-600' }
+    }
   ]
 
   if (currentScreen === 'welcome') {
