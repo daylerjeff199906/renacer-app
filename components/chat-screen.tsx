@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Send, Clock, Heart } from 'lucide-react'
-import { getChatGPTResponse } from '@/lib/chatgpt'
+import { useGemini } from '@/lib/gemini'
 
 interface Message {
   id: string
@@ -25,6 +25,7 @@ export default function ChatScreen() {
       timestamp: new Date()
     }
   ])
+  const { generateText, loading, result } = useGemini()
   const [inputText, setInputText] = useState('')
   const [messageCount, setMessageCount] = useState(1)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -53,17 +54,7 @@ export default function ChatScreen() {
     setMessageCount((prev) => prev + 1)
 
     try {
-      const replyText = await getChatGPTResponse(inputText)
-
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: replyText,
-        isUser: false,
-        timestamp: new Date()
-      }
-
-      setMessages((prev) => [...prev, botMessage])
-      setMessageCount((prev) => prev + 1)
+      await generateText(inputText)
     } catch (error) {
       console.error(error)
       const errorMessage: Message = {
@@ -77,6 +68,21 @@ export default function ChatScreen() {
       setMessageCount((prev) => prev + 1)
     }
   }
+
+  // Efecto para manejar la respuesta de Gemini
+  useEffect(() => {
+    if (loading || !result) return
+
+    const botMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      text: result,
+      isUser: false,
+      timestamp: new Date()
+    }
+
+    setMessages((prev) => [...prev, botMessage])
+    setMessageCount((prev) => prev + 1)
+  }, [loading, result])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -146,6 +152,19 @@ export default function ChatScreen() {
             </div>
           </div>
         ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] p-3 rounded-2xl bg-white border border-green-100 text-gray-800 rounded-bl-md shadow-sm">
+              <div className="flex items-center gap-2 mb-1">
+                <Heart className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs text-emerald-600 font-medium">
+                  Apoyo
+                </span>
+              </div>
+              <p className="text-sm leading-relaxed">Escribiendo...</p>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -172,7 +191,7 @@ export default function ChatScreen() {
             />
             <Button
               onClick={handleSendMessage}
-              disabled={!inputText.trim()}
+              disabled={!inputText.trim() || loading}
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-4"
             >
               <Send className="w-4 h-4" />
