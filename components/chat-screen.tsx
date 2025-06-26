@@ -194,7 +194,15 @@ export default function ChatScreen() {
                   </span>
                 </div>
               )}
-              <p className="text-sm leading-relaxed">{message.text}</p>
+              <p
+                className="text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: message.text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/\n/g, '<br />')
+                }}
+              />
               <p
                 className={`text-xs mt-1 ${
                   message.isUser ? 'text-emerald-100' : 'text-gray-500'
